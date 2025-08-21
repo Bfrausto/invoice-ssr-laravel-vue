@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import CreateClientModal from '@/components/CreateClientModal.vue';
+import CreateCompanyModal from '@/components/CreateCompanyModal.vue';
+
 import { type BreadcrumbItem } from '@/types';
 
 interface Client {
@@ -46,6 +49,9 @@ const props = defineProps<{
 }>();
 const isEditMode = computed(() => !!props.invoice);
 const invoiceData = props.invoice?.data;
+
+const showClientModal = ref(false);
+const showCompanyModal = ref(false);
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
 if (isEditMode.value) {
@@ -132,11 +138,33 @@ const submitForm = () => {
         });
     }
 };
+const handleClientCreated = (newClient) => {
+    props.formData.clients.push(newClient);
+    form.client_id = newClient.id;
+    showClientModal.value = false;
+    alert('¡Cliente creado y seleccionado!');
+};
+
+const handleCompanyCreated = (newCompany) => {
+    props.formData.companies.push(newCompany);
+    form.company_id = newCompany.id;
+    showCompanyModal.value = false;
+    alert('¡Compañía creada y seleccionada!');
+};
 </script>
 
 <template>
     <Head title="Crear Factura" />
-
+    <CreateClientModal
+        :show="showClientModal"
+        @close="showClientModal = false"
+        @client-created="handleClientCreated"
+    />
+    <CreateCompanyModal
+        :show="showCompanyModal"
+        @close="showCompanyModal = false"
+        @company-created="handleCompanyCreated"
+    />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-y-auto">
             <form @submit.prevent="submitForm" class="relative flex-1 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border bg-white dark:bg-gray-800">
@@ -151,17 +179,28 @@ const submitForm = () => {
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div>
                         <label for="client" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
-                        <select id="client" v-model="form.client_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option :value="null" disabled>Selecciona un cliente</option>
-                            <option v-for="client in props.formData.clients" :key="client.id" :value="client.id">{{ client.name }}</option>
-                        </select>
+                        <div class="flex items-center gap-2">
+                            <select id="client" v-model="form.client_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option :value="null" disabled>Selecciona un cliente</option>
+                                <option v-for="client in props.formData.clients" :key="client.id" :value="client.id">{{ client.name }}</option>
+                            </select>
+                            <button @click.prevent="showClientModal = true" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white">
+                                Nuevo
+                            </button>
+                        </div>
                         <p v-if="form.errors.client_id" class="text-sm text-red-500 mt-1">{{ form.errors.client_id }}</p>
                     </div>
                     <div>
                         <label for="company" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Compañía Emisora</label>
-                        <select id="company" v-model="form.company_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option v-for="company in props.formData.companies" :key="company.id" :value="company.id">{{ company.name }}</option>
-                        </select>
+                        <div class="flex items-center gap-2">
+
+                            <select id="company" v-model="form.company_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option v-for="company in props.formData.companies" :key="company.id" :value="company.id">{{ company.name }}</option>
+                            </select>
+                            <button @click.prevent="showCompanyModal = true" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white">
+                                Nuevo
+                            </button>
+                        </div>
                         <p v-if="form.errors.company_id" class="text-sm text-red-500 mt-1">{{ form.errors.company_id }}</p>
                     </div>
                     <div>
