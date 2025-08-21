@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <title>Factura #{{ $invoice->folio }}</title>
     <style>
-        body { font-family: sans-serif; }
+        body { font-family: sans-serif; font-size: 12px; }
         .container { width: 100%; margin: 0 auto; }
-        .header, .footer { text-align: center; }
-        .details, .items-table { width: 100%; margin-top: 20px; }
+        .header { text-align: center; }
+        .details, .items-table { width: 100%; margin-top: 25px; border-collapse: collapse; }
         .details td, .items-table td, .items-table th { padding: 8px; border: 1px solid #ddd; }
-        .items-table th { background-color: #f2f2f2; }
+        .items-table th { background-color: #f2f2f2; text-align: left; }
         .text-right { text-align: right; }
+        .totals { float: right; width: 280px; margin-top: 20px; }
+        .totals td { padding: 5px; }
+        .font-bold { font-weight: bold; }
     </style>
 </head>
 <body>
@@ -38,39 +41,56 @@
         </tr>
     </table>
 
-    <table class="items-table" cellpadding="0" cellspacing="0">
+    <table class="items-table">
         <thead>
         <tr>
             <th>Descripción</th>
-            <th>Cantidad</th>
-            <th>Precio Unitario</th>
-            <th>Total</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-right">Precio Unit.</th>
+            <th class="text-right">Desc. (%)</th>
+            <th class="text-right">Total</th>
         </tr>
         </thead>
         <tbody>
         @foreach($invoice->items as $item)
             <tr>
                 <td>{{ $item->description }}</td>
-                <td class="text-right">{{ $item->quantity }}</td>
+                <td class="text-right">{{ number_format($item->quantity, 2) }}</td>
                 <td class="text-right">${{ number_format($item->price, 2) }}</td>
+                <td class="text-right">{{ number_format($item->discount, 2) }}%</td>
                 <td class="text-right">${{ number_format($item->total, 2) }}</td>
             </tr>
         @endforeach
         </tbody>
     </table>
 
-    <table class="details text-right" style="margin-top: 20px;">
+    <table class="totals">
         <tr>
-            <td><strong>Subtotal:</strong></td>
-            <td>${{ number_format($invoice->subtotal, 2) }}</td>
+            <td class="text-right"><strong>Subtotal (antes de descuentos):</strong></td>
+            <td class="text-right">${{ number_format($invoice->subtotal, 2) }}</td>
         </tr>
+        @if($invoice->global_discount > 0)
+            <tr>
+                @php
+                    $globalDiscountAmount = $invoice->subtotal * ($invoice->global_discount / 100);
+                @endphp
+                <td class="text-right">Descuento Global ({{ number_format($invoice->global_discount, 2) }}%):</td>
+                <td class="text-right">-${{ number_format($globalDiscountAmount, 2) }}</td>
+            </tr>
+        @endif
         <tr>
-            <td><strong>Impuestos ({{ $invoice->tax->name }} {{ $invoice->tax->rate }}%):</strong></td>
-            <td>${{ number_format($invoice->total_taxes, 2) }}</td>
+            <td class="text-right"><strong>Subtotal (con descuentos):</strong></td>
+            <td class="text-right"><strong>${{ number_format($invoice->subtotal - ($invoice->subtotal * $invoice->global_discount / 100), 2) }}</strong></td>
         </tr>
+        @if($invoice->tax)
+            <tr>
+                <td class="text-right">Impuestos ({{ $invoice->tax->name }} {{ $invoice->tax->rate }}%):</td>
+                <td class="text-right">${{ number_format($invoice->total_taxes, 2) }}</td>
+            </tr>
+        @endif
         <tr>
-            <td><strong>Total:</strong></td>
-            <td><strong>${{ number_format($invoice->total, 2) }} {{ $invoice->currency }}</strong></td>
+            <td class="text-right font-bold" style="font-size: 14px;">Total:</td>
+            <td class="text-right font-bold" style="font-size: 14px;">${{ number_format($invoice->total, 2) }}</td>
         </tr>
     </table>
 </div>

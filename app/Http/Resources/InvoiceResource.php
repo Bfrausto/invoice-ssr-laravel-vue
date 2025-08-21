@@ -32,6 +32,7 @@ class InvoiceResource extends JsonResource
             'tax' => new TaxResource($this->whenLoaded('tax')),
             'currency' => $this->currency,
             'status' => $this->status,
+            'global_discount' => (float) $this->global_discount,
         ];
     }
 }

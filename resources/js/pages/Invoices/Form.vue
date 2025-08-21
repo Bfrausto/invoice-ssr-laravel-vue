@@ -31,6 +31,7 @@ interface InvoiceItem {
     description: string;
     quantity: number;
     price: number;
+    discount: number;
 }
 
 interface Invoice {
@@ -41,6 +42,7 @@ interface Invoice {
     tax_id: number | null;
     notes: string;
     items: InvoiceItem[];
+    global_discount: number;
 }
 
 const props = defineProps<{
@@ -67,8 +69,9 @@ const form = useForm({
     due_date: invoiceData?.due_date.split('T')[0] ?? new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
     tax_id: invoiceData?.tax?.id ?? props.formData.taxes[0]?.id,
     notes: invoiceData?.notes ?? '',
-    items: invoiceData?.items ? JSON.parse(JSON.stringify(invoiceData.items)) : [{ description: '', quantity: 1, price: 0 } as InvoiceItem],
-    currency: invoiceData?.currency ?? 'MXN'
+    items: invoiceData?.items ? JSON.parse(JSON.stringify(invoiceData.items)) : [{ description: '', quantity: 1, price: 0, discount: 0 } as InvoiceItem],
+    currency: invoiceData?.currency ?? 'MXN',
+    global_discount: invoiceData?.global_discount ?? 0,
 });
 
 watch(() => form.currency, (newCurrency, oldCurrency) => {
@@ -90,7 +93,19 @@ watch(() => form.currency, (newCurrency, oldCurrency) => {
     });
 });
 const subtotal = computed(() => {
-    return form.items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
+    return form.items.reduce((acc, item) => {
+        const itemTotal = item.quantity * item.price;
+        const discountAmount = itemTotal * (item.discount / 100);
+        return acc + (itemTotal - discountAmount);
+    }, 0);
+});
+
+const globalDiscountAmount = computed(() => {
+    return subtotal.value * (form.global_discount / 100);
+});
+
+const subtotalAfterDiscount = computed(() => {
+    return subtotal.value - globalDiscountAmount.value;
 });
 
 const selectedTax = computed(() => {
@@ -99,16 +114,16 @@ const selectedTax = computed(() => {
 
 const taxAmount = computed(() => {
     if (!selectedTax.value) return 0;
-    return subtotal.value * (selectedTax.value.rate / 100);
+    return subtotalAfterDiscount.value * (selectedTax.value.rate / 100);
 });
 
 const grandTotal = computed(() => {
-    return subtotal.value + taxAmount.value;
+    return subtotalAfterDiscount.value + taxAmount.value;
 });
 
 
 const addItem = () => {
-    form.items.push({ description: '', quantity: 1, price: 0 });
+    form.items.push({ description: '', quantity: 1, price: 0, discount: 0 });
 };
 
 const removeItem = (index: number) => {
@@ -170,7 +185,8 @@ const handleCompanyCreated = (newCompany) => {
             <form @submit.prevent="submitForm" class="relative flex-1 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border bg-white dark:bg-gray-800">
 
                 <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Nueva Factura</h1>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                        {{isEditMode ? `Editando factura ${invoiceData.id}` : 'Nueva Factura'}}</h1>
                     <button type="submit" :disabled="form.processing" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300">
                         {{ form.processing ? 'Guardando...' : 'Guardar Factura' }}
                     </button>
@@ -221,18 +237,21 @@ const handleCompanyCreated = (newCompany) => {
 
                 <div class="mb-8">
                     <div class="grid grid-cols-12 gap-4 mb-2 pb-2 border-b font-semibold text-gray-600 dark:text-gray-300">
-                        <div class="col-span-5">Descripción</div>
+                        <div class="col-span-4">Descripción</div>
                         <div class="col-span-2 text-right">Cantidad</div>
                         <div class="col-span-2 text-right">Precio</div>
-                        <div class="col-span-2 text-right">Total</div>
+                        <div class="col-span-1 text-right">Desc. %</div> <div class="col-span-2 text-right">Total</div>
                         <div class="col-span-1"></div>
                     </div>
                     <div v-for="(item, index) in form.items" :key="index" class="grid grid-cols-12 gap-4 mb-4 items-center">
-                        <input type="text" v-model="item.description" placeholder="Descripción del servicio" class="col-span-5 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                        <input type="text" v-model="item.description" placeholder="Descripción del servicio" class="col-span-4 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                         <input type="number" step="0.01" v-model.number="item.quantity" class="col-span-2 p-2 border rounded-lg text-right dark:bg-gray-700 dark:border-gray-600">
                         <input type="number" step="0.01" v-model.number="item.price" class="col-span-2 p-2 border rounded-lg text-right dark:bg-gray-700 dark:border-gray-600">
+                        <input type="number" v-model.number="item.discount" class="col-span-1 p-2 border rounded-lg text-right dark:bg-gray-700 dark:border-gray-600">
+
                         <span class="col-span-2 p-2 text-right text-gray-800 dark:text-gray-200">
-                            {{ props.formData.currencies[form.currency]?.symbol }}{{ (item.quantity * item.price).toFixed(2) }}
+                            {{ props.formData.currencies[form.currency]?.symbol }}{{ ((item.quantity * item.price) * (1 - item.discount / 100)).toFixed(2) }}
+
                         </span>
                         <button @click.prevent="removeItem(index)" class="col-span-1 text-red-500 hover:text-red-700">✕</button>
                     </div>
@@ -253,6 +272,14 @@ const handleCompanyCreated = (newCompany) => {
                                 <span class="font-semibold text-gray-800 dark:text-white">
                                     {{ props.formData.currencies[form.currency]?.symbol }}{{ subtotal.toFixed(2) }}
                                 </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label for="global_discount" class="text-gray-600 dark:text-gray-300">Descuento Global (%):</label>
+                                <input id="global_discount" type="number" v-model.number="form.global_discount" class="w-20 p-1 border rounded-lg text-right ...">
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Monto Descuento:</span>
+                                <span class="font-semibold text-gray-800 dark:text-white">-${{ globalDiscountAmount.toFixed(2) }}</span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <select v-model="form.tax_id" class="p-1 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">

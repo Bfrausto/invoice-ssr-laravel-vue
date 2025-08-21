@@ -31,7 +31,9 @@ class UpdateInvoiceRequest extends FormRequest
             'items.*.description' => 'nullable|string|max:255',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.price' => 'required|numeric|min:0.01',
-            'currency' => 'required|string|in:MXN,USD'
+            'currency' => 'required|string|in:MXN,USD',
+            'global_discount' => 'nullable|numeric|min:0|max:100',
+            'items.*.discount' => 'nullable|numeric|min:0|max:100'
         ];
     }
 }
