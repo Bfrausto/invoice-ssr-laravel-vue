@@ -4,10 +4,10 @@ COPY database/ ./database/
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-FROM node:16-alpine as frontend
+FROM node:16-buster as frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
