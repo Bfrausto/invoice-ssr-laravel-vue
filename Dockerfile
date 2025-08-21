@@ -19,9 +19,11 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libonig-dev \
     && rm -rf /var/lib/apt/lists/* \
+    && docker-php-source extract \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install pdo pdo_mysql zip bcmath ctype fileinfo mbstring tokenizer xml
+    && docker-php-ext-install pdo pdo_mysql zip bcmath ctype fileinfo mbstring tokenizer xml \
+    && docker-php-source delete
 
 WORKDIR /var/www/html
 
