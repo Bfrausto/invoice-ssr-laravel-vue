@@ -12,20 +12,24 @@ RUN NODE_OPTIONS=--openssl-legacy-provider npm run build
 
 FROM php:8.2-fpm
 
-RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && docker-php-source extract \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install pdo pdo_mysql zip bcmath ctype fileinfo mbstring tokenizer xml \
-    && docker-php-source delete
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        nginx \
+        supervisor \
+        $PHPIZE_DEPS \
+        libzip-dev zlib1g-dev \
+        libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+        libxml2-dev \
+        libonig-dev \   # <-- necesario para mbstring
+    ; \
+    docker-php-source extract; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg; \
+    docker-php-ext-configure zip; \
+    docker-php-ext-install -j"$(nproc)" gd pdo_mysql zip bcmath mbstring xml; \
+    docker-php-source delete; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $PHPIZE_DEPS; \
+    rm -rf /var/lib/apt/lists/*
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY nginx.conf /etc/nginx/sites-available/default
