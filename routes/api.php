@@ -11,6 +11,6 @@ use Illuminate\Support\Facades\Route;
         Route::post('/', [InvoiceController::class, 'store']);
         Route::get('/{invoice}', [InvoiceController::class, 'show']);
         Route::put('/{invoice}', [InvoiceController::class, 'update']);
-        Route::post('/{invoice}/pdf', [InvoicePdfController::class, 'store']); // <-- AÑADE ESTA LÍNEA
+        Route::post('/{invoice}/pdf', [InvoicePdfController::class, 'store']);
     });
 //});

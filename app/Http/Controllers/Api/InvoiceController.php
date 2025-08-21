@@ -39,9 +39,10 @@ class InvoiceController extends Controller
      */
     public function store(StoreInvoiceRequest $request)
     {
-        $invoice = $this->invoiceService->create($request->validated());
+        $this->invoiceService->create($request->validated());
 
-        return new InvoiceResource($invoice);
+        return redirect()->route('dashboard')
+            ->with('success', 'Factura creada exitosamente.');
     }
 
     /**
@@ -66,9 +67,10 @@ class InvoiceController extends Controller
      */
     public function update(UpdateInvoiceRequest $request, Invoice $invoice)
     {
-        $invoice = $this->invoiceService->update($invoice, $request->validated());
+        $this->invoiceService->update($invoice, $request->validated());
 
-        return new InvoiceResource($invoice);
+        return redirect()->route('dashboard', [], 303)
+            ->with('success', 'Factura actualizada  exitosamente.');
     }
 
     /**

@@ -28,23 +28,38 @@ interface InvoiceItem {
     price: number;
 }
 
-const props = defineProps<{
-    initialData: InitialData
-}>();
+interface Invoice {
+    id: number;
+    client_id: number;
+    company_id: number;
+    due_date: string;
+    tax_id: number | null;
+    notes: string;
+    items: InvoiceItem[];
+}
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Crear Factura', href: '/invoice/new' },
-];
+const props = defineProps<{
+    formData: InitialData,
+    invoice?: Invoice;
+}>();
+const isEditMode = computed(() => !!props.invoice);
+const invoiceData = props.invoice?.data;
+console.log('Invoice Data:', invoiceData);
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
+if (isEditMode.value) {
+    breadcrumbs.push({ title: `Editar Factura #${invoiceData?.id}`, href: `/invoices/${invoiceData?.id}/edit` });
+} else {
+    breadcrumbs.push({ title: 'Crear Factura', href: '/invoice/new' });
+}
+
 
 const form = useForm({
-    company_id: props.initialData.companies[0]?.id || null,
-    client_id: null,
-    due_date: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0], // Vencimiento a 30 días
-    tax_id: props.initialData.taxes[0]?.id || null,
-    notes: '',
-    items: [
-        { description: '', quantity: 1, price: 0 } as InvoiceItem
-    ]
+    company_id: invoiceData?.company.id ?? props.formData.companies[0]?.id,
+    client_id: invoiceData?.client.id ?? null,
+    due_date: invoiceData?.due_date.split('T')[0] ?? new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
+    tax_id: invoiceData?.tax?.id ?? props.formData.taxes[0]?.id,
+    notes: invoiceData?.notes ?? '',
+    items: invoiceData?.items ? JSON.parse(JSON.stringify(invoiceData.items)) : [{ description: '', quantity: 1, price: 0 } as InvoiceItem]
 });
 
 const subtotal = computed(() => {
@@ -52,7 +67,7 @@ const subtotal = computed(() => {
 });
 
 const selectedTax = computed(() => {
-    return props.initialData.taxes.find(tax => tax.id === form.tax_id);
+    return props.formData.taxes.find(tax => tax.id === form.tax_id);
 });
 
 const taxAmount = computed(() => {
@@ -76,15 +91,25 @@ const removeItem = (index: number) => {
 };
 
 const submitForm = () => {
-    form.post('/api/invoices', {
-        onSuccess: () => {
-            alert('¡Factura creada con éxito!');
-            form.reset();
-        },
-        onError: (errors) => {
-            console.error(errors);
-        }
-    });
+    if (isEditMode.value && invoiceData) {
+        form.put(`/api/invoices/${invoiceData.id}`, {
+            onSuccess: () => {
+                alert('¡Factura actualizada con éxito!');
+            },
+            onError: (errors) => {
+                console.error(errors);
+            }
+        });
+    } else {
+        form.post('/api/invoices', {
+            onSuccess: () => {
+                alert('¡Factura creada con éxito!');
+            },
+            onError: (errors) => {
+                console.error(errors);
+            }
+        });
+    }
 };
 </script>
 
@@ -107,14 +132,14 @@ const submitForm = () => {
                         <label for="client" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
                         <select id="client" v-model="form.client_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             <option :value="null" disabled>Selecciona un cliente</option>
-                            <option v-for="client in props.initialData.clients" :key="client.id" :value="client.id">{{ client.name }}</option>
+                            <option v-for="client in props.formData.clients" :key="client.id" :value="client.id">{{ client.name }}</option>
                         </select>
                         <p v-if="form.errors.client_id" class="text-sm text-red-500 mt-1">{{ form.errors.client_id }}</p>
                     </div>
                     <div>
                         <label for="company" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Compañía Emisora</label>
                         <select id="company" v-model="form.company_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option v-for="company in props.initialData.companies" :key="company.id" :value="company.id">{{ company.name }}</option>
+                            <option v-for="company in props.formData.companies" :key="company.id" :value="company.id">{{ company.name }}</option>
                         </select>
                         <p v-if="form.errors.company_id" class="text-sm text-red-500 mt-1">{{ form.errors.company_id }}</p>
                     </div>
@@ -159,7 +184,7 @@ const submitForm = () => {
                             <div class="flex justify-between items-center">
                                 <select v-model="form.tax_id" class="p-1 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                                     <option :value="null">Sin Impuesto</option>
-                                    <option v-for="tax in props.initialData.taxes" :key="tax.id" :value="tax.id">{{ tax.name }} ({{ tax.rate }}%)</option>
+                                    <option v-for="tax in props.formData.taxes" :key="tax.id" :value="tax.id">{{ tax.name }} ({{ tax.rate }}%)</option>
                                 </select>
                                 <span class="font-semibold text-gray-800 dark:text-white">${{ taxAmount.toFixed(2) }}</span>
                             </div>
