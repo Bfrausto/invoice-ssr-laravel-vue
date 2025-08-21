@@ -32,6 +32,7 @@ class InvoiceService
                 'total_taxes' => $taxAmount,
                 'total' => $total,
                 'notes' => $data['notes'] ?? null,
+                'currency' => $data['currency'],
             ]);
 
             foreach ($data['items'] as $item) {
@@ -64,6 +65,7 @@ class InvoiceService
                 'total' => $total,
                 'status' => $data['status'] ?? $invoice->status,
                 'notes' => $data['notes'] ?? null,
+                'currency' => $data['currency'] ?? $invoice->currency,
             ]);
 
             $invoice->items()->delete();

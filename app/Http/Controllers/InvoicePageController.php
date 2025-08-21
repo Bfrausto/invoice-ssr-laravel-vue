@@ -13,30 +13,32 @@ class InvoicePageController extends Controller
 {
     public function create()
     {
-        $formData = [
-            'clients' => Client::all(['id', 'name']),
-            'companies' => Company::all(['id', 'name']),
-            'taxes' => Tax::query()->get(['id', 'name', 'rate']),
-        ];
-
-
         return Inertia::render('Invoices/Form', [
-            'formData' => $formData
+            'formData' => $this->getFormData(),
         ]);
     }
 
     public function edit(Invoice $invoice)
     {
-        $formData = [
-            'clients'   => Client::all(['id', 'name']),
-            'companies' => Company::all(['id', 'name']),
-            'taxes'     => Tax::all(['id', 'name', 'rate']),
-        ];
         $invoice->load(['client', 'items', 'tax', 'company']);
 
         return Inertia::render('Invoices/Form', [
-            'formData' => $formData,
+            'formData' => $this->getFormData(),
             'invoice' => new InvoiceResource($invoice)
         ]);
+    }
+
+    /**
+     * @return array
+     */
+    public function getFormData(): array
+    {
+        return [
+            'clients' => Client::all(['id', 'name']),
+            'companies' => Company::all(['id', 'name']),
+            'taxes' => Tax::all(['id', 'name', 'rate']),
+            'currencies' => config('invoicing.currencies'),
+            'exchangeRate' => config('invoicing.exchange_rate_usd_to_mxn')
+        ];
     }
 }

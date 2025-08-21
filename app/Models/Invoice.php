@@ -27,6 +27,7 @@ class Invoice extends Model
         'total_taxes',
         'total',
         'notes',
+        'currency',
     ];
 
     public function company()

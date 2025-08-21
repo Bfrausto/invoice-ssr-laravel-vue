@@ -70,7 +70,7 @@
         </tr>
         <tr>
             <td><strong>Total:</strong></td>
-            <td><strong>${{ number_format($invoice->total, 2) }}</strong></td>
+            <td><strong>${{ number_format($invoice->total, 2) }} {{ $invoice->currency }}</strong></td>
         </tr>
     </table>
 </div>

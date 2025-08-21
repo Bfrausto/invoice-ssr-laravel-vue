@@ -27,11 +27,11 @@ class StoreInvoiceRequest extends FormRequest
             'due_date' => 'required|date',
             'tax_id' => 'nullable|exists:taxes,id',
             'notes' => 'nullable|string',
-
             'items' => 'required|array|min:1',
             'items.*.description' => 'nullable|string|max:255',
             'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.price' => 'required|numeric|min:0.01'
+            'items.*.price' => 'required|numeric|min:0.01',
+            'currency' => 'required|string|in:MXN,USD'
         ];
     }
 }

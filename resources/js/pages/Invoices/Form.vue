@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -17,10 +17,12 @@ interface Tax {
     name: string;
     rate: number;
 }
-interface InitialData {
+interface FormData {
     clients: Client[];
     companies: Company[];
     taxes: Tax[];
+    currencies: [];
+    exchangeRate: number;
 }
 interface InvoiceItem {
     description: string;
@@ -39,12 +41,12 @@ interface Invoice {
 }
 
 const props = defineProps<{
-    formData: InitialData,
+    formData: FormData,
     invoice?: Invoice;
 }>();
 const isEditMode = computed(() => !!props.invoice);
 const invoiceData = props.invoice?.data;
-console.log('Invoice Data:', invoiceData);
+
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
 if (isEditMode.value) {
     breadcrumbs.push({ title: `Editar Factura #${invoiceData?.id}`, href: `/invoices/${invoiceData?.id}/edit` });
@@ -59,9 +61,28 @@ const form = useForm({
     due_date: invoiceData?.due_date.split('T')[0] ?? new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
     tax_id: invoiceData?.tax?.id ?? props.formData.taxes[0]?.id,
     notes: invoiceData?.notes ?? '',
-    items: invoiceData?.items ? JSON.parse(JSON.stringify(invoiceData.items)) : [{ description: '', quantity: 1, price: 0 } as InvoiceItem]
+    items: invoiceData?.items ? JSON.parse(JSON.stringify(invoiceData.items)) : [{ description: '', quantity: 1, price: 0 } as InvoiceItem],
+    currency: invoiceData?.currency ?? 'MXN'
 });
 
+watch(() => form.currency, (newCurrency, oldCurrency) => {
+    if (!oldCurrency) {
+        return;
+    }
+
+    const rate = props.formData.exchangeRate;
+
+    form.items = form.items.map(item => {
+        let newPrice = item.price;
+        if (newCurrency === 'USD' && oldCurrency === 'MXN') {
+            newPrice = item.price / rate;
+        } else if (newCurrency === 'MXN' && oldCurrency === 'USD') {
+            newPrice = item.price * rate;
+        }
+
+        return { ...item, price: newPrice };
+    });
+});
 const subtotal = computed(() => {
     return form.items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
 });
@@ -127,7 +148,7 @@ const submitForm = () => {
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div>
                         <label for="client" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
                         <select id="client" v-model="form.client_id" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
@@ -148,6 +169,15 @@ const submitForm = () => {
                         <input type="date" id="due_date" v-model="form.due_date" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <p v-if="form.errors.due_date" class="text-sm text-red-500 mt-1">{{ form.errors.due_date }}</p>
                     </div>
+                    <div>
+                        <label for="currency" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Moneda</label>
+                        <select id="currency" v-model="form.currency" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option v-for="(currency, key) in props.formData.currencies" :key="key" :value="key">
+                                {{ currency.label }}
+                            </option>
+                        </select>
+                        <p v-if="form.errors.currency" class="text-sm ...">{{ form.errors.currency }}</p>
+                    </div>
                 </div>
 
                 <div class="mb-8">
@@ -162,7 +192,9 @@ const submitForm = () => {
                         <input type="text" v-model="item.description" placeholder="Descripción del servicio" class="col-span-5 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                         <input type="number" step="0.01" v-model.number="item.quantity" class="col-span-2 p-2 border rounded-lg text-right dark:bg-gray-700 dark:border-gray-600">
                         <input type="number" step="0.01" v-model.number="item.price" class="col-span-2 p-2 border rounded-lg text-right dark:bg-gray-700 dark:border-gray-600">
-                        <span class="col-span-2 p-2 text-right text-gray-800 dark:text-gray-200">${{ (item.quantity * item.price).toFixed(2) }}</span>
+                        <span class="col-span-2 p-2 text-right text-gray-800 dark:text-gray-200">
+                            {{ props.formData.currencies[form.currency]?.symbol }}{{ (item.quantity * item.price).toFixed(2) }}
+                        </span>
                         <button @click.prevent="removeItem(index)" class="col-span-1 text-red-500 hover:text-red-700">✕</button>
                     </div>
                     <button @click.prevent="addItem" type="button" class="mt-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
@@ -179,19 +211,25 @@ const submitForm = () => {
                         <div class="w-full max-w-sm space-y-3">
                             <div class="flex justify-between">
                                 <span class="text-gray-600 dark:text-gray-300">Subtotal:</span>
-                                <span class="font-semibold text-gray-800 dark:text-white">${{ subtotal.toFixed(2) }}</span>
+                                <span class="font-semibold text-gray-800 dark:text-white">
+                                    {{ props.formData.currencies[form.currency]?.symbol }}{{ subtotal.toFixed(2) }}
+                                </span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <select v-model="form.tax_id" class="p-1 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                                     <option :value="null">Sin Impuesto</option>
                                     <option v-for="tax in props.formData.taxes" :key="tax.id" :value="tax.id">{{ tax.name }} ({{ tax.rate }}%)</option>
                                 </select>
-                                <span class="font-semibold text-gray-800 dark:text-white">${{ taxAmount.toFixed(2) }}</span>
+                                <span class="font-semibold text-gray-800 dark:text-white">
+                                    {{ props.formData.currencies[form.currency]?.symbol }}{{ taxAmount.toFixed(2) }}
+                                </span>
                             </div>
                             <div class="border-t my-2 dark:border-gray-600"></div>
                             <div class="flex justify-between text-xl font-bold">
                                 <span class="text-gray-800 dark:text-white">Total:</span>
-                                <span class="text-gray-800 dark:text-white">${{ grandTotal.toFixed(2) }}</span>
+                                <span class="text-gray-800 dark:text-white">
+                                    {{ props.formData.currencies[form.currency]?.symbol }}{{ grandTotal.toFixed(2) }} {{form.currency}}
+                                </span>
                             </div>
                         </div>
                     </div>
