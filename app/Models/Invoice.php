@@ -29,6 +29,7 @@ class Invoice extends Model
         'notes',
         'currency',
         'global_discount',
+        'series',
     ];
 
     public function company()

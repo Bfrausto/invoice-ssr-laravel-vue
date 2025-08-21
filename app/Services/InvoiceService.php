@@ -35,18 +35,20 @@ class InvoiceService
 
 
             $invoice = Invoice::create([
+                'series' => $data['series'] ?? 'F',
+                'folio' => $data['folio'],
                 'company_id' => $data['company_id'],
                 'client_id' => $data['client_id'],
                 'due_date' => $data['due_date'],
                 'tax_id' => $data['tax_id'] ?? null,
                 'issue_date' => now(),
-                'folio' => (Invoice::max('folio') ?? 0) + 1,
                 'subtotal' => $subtotal,
                 'global_discount' => $data['global_discount'] ?? 0,
                 'total_taxes' => $taxAmount,
                 'total' => $total,
                 'notes' => $data['notes'] ?? null,
                 'currency' => $data['currency'],
+                'status' => $data['status'],
             ]);
 
             $invoice->items()->createMany($itemsWithTotals->toArray());
@@ -81,6 +83,8 @@ class InvoiceService
 
 
             $invoice->update([
+                'series' => $data['series'] ?? 'F',
+                'folio' => $data['folio'],
                 'client_id' => $data['client_id'],
                 'due_date' => $data['due_date'],
                 'tax_id' => $data['tax_id'] ?? null,
@@ -88,7 +92,7 @@ class InvoiceService
                 'global_discount' => $data['global_discount'] ?? 0,
                 'total_taxes' => $taxAmount,
                 'total' => $total,
-                'status' => $data['status'] ?? $invoice->status,
+                'status' => $data['status'],
                 'notes' => $data['notes'] ?? null,
                 'currency' => $data['currency'] ?? $invoice->currency,
             ]);

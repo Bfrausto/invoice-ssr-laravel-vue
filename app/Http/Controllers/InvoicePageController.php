@@ -57,7 +57,8 @@ class InvoicePageController extends Controller
             'companies' => Company::all(['id', 'name']),
             'taxes' => Tax::all(['id', 'name', 'rate']),
             'currencies' => config('invoicing.currencies'),
-            'exchangeRate' => config('invoicing.exchange_rate_usd_to_mxn')
+            'exchangeRate' => config('invoicing.exchange_rate_usd_to_mxn'),
+            'nextFolio' => (Invoice::max('folio') ?? 0) + 1,
         ];
     }
 }

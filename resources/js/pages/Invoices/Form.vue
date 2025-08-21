@@ -26,6 +26,7 @@ interface FormData {
     taxes: Tax[];
     currencies: [];
     exchangeRate: number;
+    nextFolio: number;
 }
 interface InvoiceItem {
     description: string;
@@ -43,6 +44,8 @@ interface Invoice {
     notes: string;
     items: InvoiceItem[];
     global_discount: number;
+    folio: number;
+    series: string;
 }
 
 const props = defineProps<{
@@ -64,6 +67,8 @@ if (isEditMode.value) {
 
 
 const form = useForm({
+    series: invoiceData?.series ?? 'F',
+    folio: invoiceData?.folio ?? props.formData.nextFolio,
     company_id: invoiceData?.company.id ?? props.formData.companies[0]?.id,
     client_id: invoiceData?.client.id ?? null,
     due_date: invoiceData?.due_date.split('T')[0] ?? new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
@@ -72,6 +77,7 @@ const form = useForm({
     items: invoiceData?.items ? JSON.parse(JSON.stringify(invoiceData.items)) : [{ description: '', quantity: 1, price: 0, discount: 0 } as InvoiceItem],
     currency: invoiceData?.currency ?? 'MXN',
     global_discount: invoiceData?.global_discount ?? 0,
+    status: invoiceData?.status ?? 'draft'
 });
 
 watch(() => form.currency, (newCurrency, oldCurrency) => {
@@ -88,6 +94,7 @@ watch(() => form.currency, (newCurrency, oldCurrency) => {
         } else if (newCurrency === 'MXN' && oldCurrency === 'USD') {
             newPrice = item.price * rate;
         }
+        newPrice = newPrice.toFixed(2);
 
         return { ...item, price: newPrice };
     });
@@ -132,7 +139,8 @@ const removeItem = (index: number) => {
     }
 };
 
-const submitForm = () => {
+const submitForm = (targetStatus: 'draft' | 'saved') => {
+    form.status = targetStatus;
     if (isEditMode.value && invoiceData) {
         form.put(`/api/invoices/${invoiceData.id}`, {
             onSuccess: () => {
@@ -187,9 +195,14 @@ const handleCompanyCreated = (newCompany) => {
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
                         {{isEditMode ? `Editando factura ${invoiceData.id}` : 'Nueva Factura'}}</h1>
-                    <button type="submit" :disabled="form.processing" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300">
-                        {{ form.processing ? 'Guardando...' : 'Guardar Factura' }}
-                    </button>
+                    <div class="flex justify-end items-center gap-4">
+                        <button @click.prevent="submitForm('draft')" :disabled="form.processing" type="button" class="px-6 py-3 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:bg-gray-300">
+                            {{ form.processing ? 'Guardando...' : 'Guardar Borrador' }}
+                        </button>
+                        <button @click.prevent="submitForm('saved')" :disabled="form.processing" type="button" class="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-green-300">
+                            {{ form.processing ? 'Guardando...' : (isEditMode ? 'Guardar Cambios' : 'Guardar y Finalizar') }}
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -219,19 +232,34 @@ const handleCompanyCreated = (newCompany) => {
                         </div>
                         <p v-if="form.errors.company_id" class="text-sm text-red-500 mt-1">{{ form.errors.company_id }}</p>
                     </div>
-                    <div>
-                        <label for="due_date" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de Vencimiento</label>
-                        <input type="date" id="due_date" v-model="form.due_date" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <p v-if="form.errors.due_date" class="text-sm text-red-500 mt-1">{{ form.errors.due_date }}</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="due_date" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de Vencimiento</label>
+                            <input type="date" id="due_date" v-model="form.due_date" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <p v-if="form.errors.due_date" class="text-sm text-red-500 mt-1">{{ form.errors.due_date }}</p>
+                        </div>
+                        <div>
+                            <label for="currency" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Moneda</label>
+                            <select id="currency" v-model="form.currency" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option v-for="(currency, key) in props.formData.currencies" :key="key" :value="key">
+                                    {{ currency.label }}
+                                </option>
+                            </select>
+                            <p v-if="form.errors.currency" class="text-sm text-red-500 mt-1">{{ form.errors.currency }}</p>
+                        </div>
                     </div>
-                    <div>
-                        <label for="currency" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Moneda</label>
-                        <select id="currency" v-model="form.currency" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option v-for="(currency, key) in props.formData.currencies" :key="key" :value="key">
-                                {{ currency.label }}
-                            </option>
-                        </select>
-                        <p v-if="form.errors.currency" class="text-sm ...">{{ form.errors.currency }}</p>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="series" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Serie</label>
+                            <input type="text" id="series" v-model="form.series" class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <p v-if="form.errors.series" class="text-sm text-red-500 mt-1">{{ form.errors.series }}</p>
+                        </div>
+                        <div>
+                            <label for="folio" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Folio</label>
+                            <input type="number" id="folio" v-model="form.folio" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <p v-if="form.errors.folio" class="text-sm text-red-500 mt-1">{{ form.errors.folio }}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -275,7 +303,7 @@ const handleCompanyCreated = (newCompany) => {
                             </div>
                             <div class="flex justify-between items-center">
                                 <label for="global_discount" class="text-gray-600 dark:text-gray-300">Descuento Global (%):</label>
-                                <input id="global_discount" type="number" v-model.number="form.global_discount" class="w-20 p-1 border rounded-lg text-right ...">
+                                <input id="global_discount" type="number" v-model.number="form.global_discount" class="w-20 p-1 border rounded-lg text-right bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600 dark:text-gray-300">Monto Descuento:</span>
