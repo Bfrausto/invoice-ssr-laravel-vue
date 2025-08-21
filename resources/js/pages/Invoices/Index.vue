@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
+import axios from 'axios';
 
 defineProps<{
     invoices: {
         data: any[];
+        links: any[];
         meta: any[];
     };
 }>();
@@ -19,6 +22,33 @@ const formatCurrency = (value: number, currency: string = 'MXN') => {
         style: 'currency',
         currency: currency,
     }).format(value);
+};
+const downloadingId = ref<number | null>(null);
+
+const downloadPdf = async (invoice: any) => {
+    downloadingId.value = invoice.id;
+    try {
+        const response = await axios.post(`/api/invoices/${invoice.id}/pdf`, {}, {
+            responseType: 'blob',
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `factura-${invoice.folio}.pdf`);
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error('Error al descargar el PDF:', error);
+        alert('No se pudo descargar el PDF.');
+    } finally {
+        downloadingId.value = null;
+    }
 };
 </script>
 
@@ -64,6 +94,13 @@ const formatCurrency = (value: number, currency: string = 'MXN') => {
                             <Link :href="`/invoices/${invoice.id}/edit`" class="text-blue-500 hover:underline">
                                 Editar
                             </Link>
+
+                            <button v-if="invoice.status === 'saved'"
+                                    @click="downloadPdf(invoice)"
+                                    :disabled="downloadingId === invoice.id"
+                                    class="ml-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-green-300">
+                                {{ downloadingId === invoice.id ? 'Descargando...' : 'Descargar PDF' }}
+                            </button>
                         </td>
                     </tr>
                     <tr v-if="invoices.data.length === 0">

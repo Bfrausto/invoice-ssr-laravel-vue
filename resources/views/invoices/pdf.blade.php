@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Factura #{{ $invoice->folio }}</title>
+    <title>Factura # {{ $invoice->series }}{{ $invoice->folio }}</title>
     <style>
         body { font-family: sans-serif; font-size: 12px; }
         .container { width: 100%; margin: 0 auto; }
@@ -11,7 +11,7 @@
         .details td, .items-table td, .items-table th { padding: 8px; border: 1px solid #ddd; }
         .items-table th { background-color: #f2f2f2; text-align: left; }
         .text-right { text-align: right; }
-        .totals { float: right; width: 280px; margin-top: 20px; }
+        .totals { float: right; width: 350px; margin-top: 20px; }
         .totals td { padding: 5px; }
         .font-bold { font-weight: bold; }
     </style>
@@ -34,7 +34,7 @@
                 {{ $invoice->client->email }}
             </td>
             <td>
-                <strong>Folio:</strong> #{{ $invoice->folio }}<br>
+                <strong>Folio:</strong> #{{ $invoice->series }} - {{ $invoice->folio }}<br>
                 <strong>Fecha de Emisión:</strong> {{ $invoice->issue_date }}<br>
                 <strong>Fecha de Vencimiento:</strong> {{ $invoice->due_date }}
             </td>
@@ -90,7 +90,7 @@
         @endif
         <tr>
             <td class="text-right font-bold" style="font-size: 14px;">Total:</td>
-            <td class="text-right font-bold" style="font-size: 14px;">${{ number_format($invoice->total, 2) }}</td>
+            <td class="text-right font-bold" style="font-size: 14px;">${{ number_format($invoice->total, 2) }}  {{ $invoice->currency }}</td>
         </tr>
     </table>
 </div>
