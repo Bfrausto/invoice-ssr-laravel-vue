@@ -14,6 +14,7 @@ FROM php:8.2-fpm-alpine
 WORKDIR /var/www/html
 
 RUN apk add --no-cache libzip-dev oniguruma-dev libxml2-dev \
+    libpng-dev libjpeg-turbo-dev freetype-dev \
     && docker-php-ext-install pdo pdo_mysql gd zip bcmath ctype fileinfo mbstring tokenizer xml
 
 COPY --chown=www-data:www-data --from=vendor /app/ /var/www/html/
