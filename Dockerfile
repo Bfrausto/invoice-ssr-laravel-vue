@@ -33,7 +33,7 @@ RUN set -eux; \
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY nginx.conf /etc/nginx/sites-available/default
-RUN ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 WORKDIR /var/www/html
 COPY --from=vendor /app/ /var/www/html/
