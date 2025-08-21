@@ -4,7 +4,7 @@ COPY database/ ./database/
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-FROM node:18-alpine as frontend
+FROM node:16-alpine as frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install
