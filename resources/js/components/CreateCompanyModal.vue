@@ -51,17 +51,17 @@ const saveCompany = async () => {
             <form @submit.prevent="saveCompany">
                 <div class="mb-4">
                     <label for="new-company-name" class="block mb-2 text-sm font-medium">Nombre</label>
-                    <input id="new-company-name" v-model="formData.name" type="text" required class="w-full p-2.5 border rounded-lg">
+                    <input id="new-company-name" v-model="formData.name" type="text" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <p v-if="errors.name" class="text-sm text-red-500 mt-1">{{ errors.name[0] }}</p>
                 </div>
                 <div class="mb-4">
                     <label for="new-company-email" class="block mb-2 text-sm font-medium">Email</label>
-                    <input id="new-company-email" v-model="formData.email" type="email" required class="w-full p-2.5 border rounded-lg">
+                    <input id="new-company-email" v-model="formData.email" type="email" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <p v-if="errors.email" class="text-sm text-red-500 mt-1">{{ errors.email[0] }}</p>
                 </div>
                 <div class="mb-6">
                     <label for="new-company-address" class="block mb-2 text-sm font-medium">Dirección</label>
-                    <textarea id="new-company-address" v-model="formData.address" required class="w-full p-2.5 border rounded-lg"></textarea>
+                    <textarea id="new-company-address" v-model="formData.address" required class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
                     <p v-if="errors.address" class="text-sm text-red-500 mt-1">{{ errors.address[0] }}</p>
                 </div>
                 <div class="flex justify-end gap-4">
