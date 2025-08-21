@@ -30,6 +30,8 @@ class InvoiceResource extends JsonResource
             'client' => new ClientResource($this->whenLoaded('client')),
             'items' => InvoiceItemResource::collection($this->whenLoaded('items')),
             'tax' => new TaxResource($this->whenLoaded('tax')),
+            'currency' => $this->currency,
+            'status' => $this->status,
         ];
     }
 }

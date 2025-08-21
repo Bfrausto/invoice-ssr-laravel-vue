@@ -18,6 +18,8 @@ Route::group(['prefix' => 'invoices'], function () {
         ->name('invoice.create');
     Route::get('{invoice}/edit', [InvoicePageController::class, 'edit'])
         ->name('invoice.edit');
+    Route::get('dashboard', [InvoicePageController::class, 'index'])
+        ->name('invoice.index');
 });
 
 require __DIR__.'/settings.php';
