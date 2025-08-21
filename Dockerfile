@@ -21,7 +21,7 @@ RUN set -eux; \
         libzip-dev zlib1g-dev \
         libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
         libxml2-dev \
-        libonig-dev \   # <-- necesario para mbstring
+        libonig-dev \
     ; \
     docker-php-source extract; \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
