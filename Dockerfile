@@ -26,7 +26,7 @@ RUN set -eux; \
     docker-php-source extract; \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
     docker-php-ext-configure zip; \
-    docker-php-ext-install -j"$(nproc)" gd pdo_mysql zip bcmath mbstring xml; \
+    docker-php-ext-install -j"$(nproc)" gd pdo_mysql pdo_pgsql zip bcmath mbstring xml; \
     docker-php-source delete; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $PHPIZE_DEPS; \
     rm -rf /var/lib/apt/lists/*
