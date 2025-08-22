@@ -4,6 +4,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CreateClientModal from '@/components/CreateClientModal.vue';
 import CreateCompanyModal from '@/components/CreateCompanyModal.vue';
+import CreateTaxModal from '@/components/CreateTaxModal.vue';
 
 import { type BreadcrumbItem } from '@/types';
 
@@ -57,6 +58,7 @@ const invoiceData = props.invoice?.data;
 
 const showClientModal = ref(false);
 const showCompanyModal = ref(false);
+const showTaxModal = ref(false);
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
 if (isEditMode.value) {
@@ -174,6 +176,13 @@ const handleCompanyCreated = (newCompany) => {
     showCompanyModal.value = false;
     alert('¡Compañía creada y seleccionada!');
 };
+
+const handleTaxCreated = (newTax) => {
+    props.formData.taxes.push(newTax);
+    form.tax_id = newTax.id;
+    showTaxModal.value = false;
+    alert('¡Impuesto creado y seleccionado!');
+};
 </script>
 
 <template>
@@ -188,10 +197,14 @@ const handleCompanyCreated = (newCompany) => {
         @close="showCompanyModal = false"
         @company-created="handleCompanyCreated"
     />
+    <CreateTaxModal
+        :show="showTaxModal"
+        @close="showTaxModal = false"
+        @tax-created="handleTaxCreated"
+    />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-y-auto">
             <form @submit.prevent="submitForm" class="relative flex-1 rounded-xl border border-sidebar-border/70 p-6 dark:border-sidebar-border bg-white dark:bg-gray-800">
-
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
                         {{isEditMode ? `Editando factura ${invoiceData.id}` : 'Nueva Factura'}}</h1>
@@ -310,10 +323,13 @@ const handleCompanyCreated = (newCompany) => {
                                 <span class="font-semibold text-gray-800 dark:text-white">-${{ globalDiscountAmount.toFixed(2) }}</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <select v-model="form.tax_id" class="p-1 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-                                    <option :value="null">Sin Impuesto</option>
-                                    <option v-for="tax in props.formData.taxes" :key="tax.id" :value="tax.id">{{ tax.name }} ({{ tax.rate }}%)</option>
-                                </select>
+                                <div class="flex items-center gap-2">
+                                    <select v-model="form.tax_id" class="p-1 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                                        <option :value="null">Sin Impuesto</option>
+                                        <option v-for="tax in props.formData.taxes" :key="tax.id" :value="tax.id">{{ tax.name }} ({{ tax.rate }}%)</option>
+                                    </select>
+                                    <button @click.prevent="showTaxModal = true" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white">Nuevo</button>
+                                </div>
                                 <span class="font-semibold text-gray-800 dark:text-white">
                                     {{ props.formData.currencies[form.currency]?.symbol }}{{ taxAmount.toFixed(2) }}
                                 </span>
