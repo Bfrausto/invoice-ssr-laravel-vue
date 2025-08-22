@@ -40,8 +40,12 @@ WORKDIR /var/www/html
 COPY --from=vendor /app/ /var/www/html/
 COPY --from=frontend /app/public/build/ ./public/build/
 
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+ENTRYPOINT ["entrypoint.sh"]
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
