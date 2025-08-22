@@ -22,6 +22,7 @@ RUN set -eux; \
         libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
         libxml2-dev \
         libonig-dev \
+        libpq-dev \
     ; \
     docker-php-source extract; \
     docker-php-ext-configure gd --with-freetype --with-jpeg; \
